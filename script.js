@@ -9,6 +9,7 @@ let updateBoom;
 function firstClick (){
     document.querySelector("audio").play();
     window.removeEventListener("click", firstClick);
+    window.removeEventListener("touchstart", firstClick);
 
     let clubber = new Clubber();
 
@@ -61,6 +62,7 @@ function firstClick (){
 
 }
 window.addEventListener("click", firstClick);
+window.addEventListener("touchstart", firstClick);
 
 let config = {
     SIM_RESOLUTION: 128,

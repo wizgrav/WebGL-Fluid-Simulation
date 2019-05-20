@@ -60,6 +60,8 @@ function firstClick (){
         //console.log(bml, bmh, bvl,bvh);
     }
 
+    window.setInterval(updateBoom, 1000/120);
+
 }
 window.addEventListener("click", firstClick);
 window.addEventListener("touchstart", firstClick);
@@ -1068,7 +1070,7 @@ function step (dt) {
     gl.disable(gl.BLEND);
     gl.viewport(0, 0, simWidth, simHeight);
 
-    if(updateBoom) updateBoom();
+    //if(updateBoom) updateBoom();
 
     curlProgram.bind();
     gl.uniform2f(curlProgram.uniforms.texelSize, 1.0 / simWidth, 1.0 / simHeight);

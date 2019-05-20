@@ -4,6 +4,64 @@ const canvas = document.getElementsByTagName('canvas')[0];
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
 
+let updateBoom;
+
+function firstClick (){
+    document.querySelector("audio").play();
+    window.removeEventListener("click", firstClick);
+
+    let clubber = new Clubber();
+
+    clubber.listen(document.querySelector("audio"));
+
+    const mix = function (v0, v1, t) {
+        return v0*(1-t)+v1*t;
+    }
+    const smoothstep = function (min, max, value) {
+        var x = Math.max(0, Math.min(1, (value-min)/(max-min)));
+        return x*x*(3 - 2*x);
+    }
+
+    function boom(cfg) {
+
+        const b = clubber.band({ template: [cfg.index, cfg.index].join(""), smooth: [0.1, -0.1], from: cfg.from, to: cfg.to, low: cfg.low, high: cfg.high });
+        const d = new Float32Array(2);
+        let v = 0;
+        
+        return function () {
+            b(d);
+            //console.log(d[0], d[1]);
+            v = mix(v, smoothstep(0, 0.2, Math.abs(d[0] - d[1])), cfg.smooth || 0.1);
+            return v;
+        }
+
+    }
+
+    const bmlow = boom({ index: 0, from: 12, to: 48, low: 50, high: 128 });
+    const bmhi = boom({ index: 0, from: 36, to: 60, low: 50, high: 128 });
+    const bvlow = boom({ index: 4, from: 12, to: 48, low: 50, high: 128 });
+    const bvhi = boom({ index: 4, from: 36, to: 60, low: 50, high: 128 });
+
+    updateBoom = function () {
+        clubber.update();
+
+        const bml = bmlow();
+        const bmh = bmhi();
+        const bvl = bvlow();
+        const bvh = bvhi();
+
+        config.SPLAT_RADIUS = mix(0.33, 1, bvl);
+        config.BLOOM_INTENSITY = mix(0.1, 1.1, bvh);
+        config.DENSITY_DISSIPATION = mix(0.93, 0.99, bmh);
+        config.VELOCITY_DISSIPATION = mix(0.93, 0.99, bml);
+
+        splatStack.push(parseInt(bvh * 10));
+        //console.log(bml, bmh, bvl,bvh);
+    }
+
+}
+window.addEventListener("click", firstClick);
+
 let config = {
     SIM_RESOLUTION: 128,
     DYE_RESOLUTION: 512,
@@ -25,6 +83,8 @@ let config = {
     BLOOM_THRESHOLD: 0.6,
     BLOOM_SOFT_KNEE: 0.7
 }
+
+
 
 function pointerPrototype () {
     this.id = -1;
@@ -1005,6 +1065,8 @@ function input () {
 function step (dt) {
     gl.disable(gl.BLEND);
     gl.viewport(0, 0, simWidth, simHeight);
+
+    if(updateBoom) updateBoom();
 
     curlProgram.bind();
     gl.uniform2f(curlProgram.uniforms.texelSize, 1.0 / simWidth, 1.0 / simHeight);
